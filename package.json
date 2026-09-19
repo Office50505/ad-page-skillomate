@@ -1,0 +1,9 @@
+{
+  "name": "skillo-mate-checkout",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Skillo Mate checkout demo",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

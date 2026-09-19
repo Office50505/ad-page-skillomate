@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#050505" />
+    <title>Checkout | Skillomate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section class="offer-gate" data-offer-gate aria-label="Skillomate subscription offer">
+      <div class="offer-gate-inner">
+        <div class="preview-player">
+          <video data-preview-video autoplay muted loop playsinline preload="metadata" poster="assets/course-preview-poster.png">
+            <source src="assets/course-preview.mp4" type="video/mp4" />
+          </video>
+          <button class="mute-button" type="button" aria-label="Unmute preview" data-mute-button>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="m17 9 4 6m0-6-4 6"/></svg>
+          </button>
+          <div class="video-progress" aria-hidden="true"><span></span></div>
+        </div>
+
+        <article class="special-offer">
+          <div class="special-ribbon">Special offer</div>
+          <p>Only for you</p>
+          <h1>Skillomate Subscription</h1>
+          <strong class="offer-price">₹1</strong>
+          <h2>For 24 Hours</h2>
+          <div class="offer-rule"></div>
+          <p class="offer-renewal">Then ₹499/month <span>·</span> Cancel anytime</p>
+        </article>
+      </div>
+
+      <div class="offer-action-bar">
+        <button type="button" data-enter-checkout>Subscribe for ₹1 <span>→</span></button>
+        <p>To enjoy uninterrupted learning, your subscription will auto-renew. You can cancel it anytime.</p>
+      </div>
+    </section>
+
+    <div class="checkout-app" data-checkout-app hidden>
+      <main class="payment-screen" aria-labelledby="payment-screen-title">
+        <header class="payment-topbar">
+          <button type="button" aria-label="Back to offer" data-payment-back>←</button>
+          <h1 id="payment-screen-title">Make Payment</h1>
+        </header>
+
+        <div class="payment-content">
+          <a class="payment-brand" href="#" aria-label="Skillomate home"><span>S</span><strong>Skill<span>omate</span></strong></a>
+
+          <section class="subscription-box" aria-label="Subscription summary">
+            <div class="subscription-title">
+              <h2>Skillomate Subscription</h2>
+              <p>Trial access for 24 hours</p>
+            </div>
+            <div class="pay-now-row"><strong>Pay Now</strong><b>₹1/-</b></div>
+            <p class="autopay-message">After 24 hours, your subscription will renew via UPI AutoPay at ₹499/month. You can turn off AutoPay anytime from settings.</p>
+          </section>
+
+          <section class="payment-methods" aria-labelledby="methods-title">
+            <h2 id="methods-title">Choose a payment method</h2>
+            <button class="method-row" type="button" data-method="PhonePe">
+              <span class="app-icon phonepe">पे</span><strong>PhonePe <small>(Recommended)</small></strong><span class="row-arrow">›</span>
+            </button>
+            <button class="method-row" type="button" data-method="Google Pay">
+              <span class="app-icon gpay">G</span><strong>Google Pay</strong><span class="row-arrow">›</span>
+            </button>
+            <button class="method-row" type="button" data-method="Paytm">
+              <span class="app-icon paytm">pay</span><strong>Paytm</strong><span class="row-arrow">›</span>
+            </button>
+
+            <div class="qr-method selected" data-qr-method>
+              <button class="qr-method-head" type="button" data-qr-toggle aria-expanded="true">
+                <span class="app-icon qr-mini">▣</span><strong>Pay with QR</strong><span class="row-arrow">⌃</span>
+              </button>
+              <div class="qr-method-body" data-qr-body>
+                <div class="checkout-qr" aria-label="Demo UPI QR code">
+                  <span></span><span></span><span></span><span></span><span></span>
+                  <span></span><span></span><span></span><span></span><span></span>
+                  <span></span><span></span><span></span><span></span><span></span>
+                  <span></span><span></span><span></span><span></span><span></span>
+                  <span></span><span></span><span></span><span></span><span></span><i>SM</i>
+                </div>
+                <p>Scan with any UPI app to pay ₹1</p>
+                <button class="checkout-pay-button" type="button" data-pay-button><span data-pay-label>Pay ₹1</span><span>→</span></button>
+                <p class="checkout-status" data-payment-status aria-live="polite">100% secure payment</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="signin-backdrop" data-auth-modal hidden>
+      <section class="signin-modal" role="dialog" aria-modal="true" aria-labelledby="signin-title">
+        <button class="signin-close" type="button" aria-label="Close sign in" data-auth-close>×</button>
+        <div class="signin-brand"><span>S</span><strong>Skill<span>omate</span></strong></div>
+
+        <form data-phone-form>
+          <h2 id="signin-title">Sign in to continue</h2>
+          <p>Enter your mobile number to continue with the ₹1 Skillomate trial.</p>
+          <label for="phone-number">Mobile number</label>
+          <div class="phone-field"><span>+91</span><input id="phone-number" name="phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" placeholder="Enter 10-digit number" required /></div>
+          <button type="submit" data-send-otp>Continue</button>
+          <p class="signin-status" data-auth-status aria-live="polite"></p>
+          <small>By continuing, you agree to Skillomate’s Terms and Privacy Policy.</small>
+        </form>
+
+        <form data-otp-form hidden>
+          <button class="otp-back" type="button" data-otp-back>← Change number</button>
+          <h2>Enter OTP</h2>
+          <p>We sent a 6-digit code to <strong data-phone-preview></strong>.</p>
+          <label for="otp-code">One-time password</label>
+          <input class="otp-input" id="otp-code" name="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="• • • • • •" required />
+          <p class="demo-otp" data-demo-otp></p>
+          <button type="submit" data-verify-otp>Verify &amp; continue</button>
+          <button class="resend-otp" type="button" data-resend-otp>Resend OTP</button>
+          <p class="signin-status" data-otp-status aria-live="polite"></p>
+        </form>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" data-modal hidden>
+      <section class="payment-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <button class="close-modal" type="button" aria-label="Close" data-close-modal>×</button>
+        <div class="success-icon" aria-hidden="true">✓</div><p class="section-label">Payment confirmed</p>
+        <h2 id="modal-title">Your learning starts now.</h2>
+        <p>Your 24-hour Skillomate trial is active. Your next payment will be ₹499 unless you cancel before renewal.</p>
+        <p class="transaction-id" data-transaction-id></p>
+        <button class="modal-action" type="button" data-close-modal>Start Learning →</button>
+      </section>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
