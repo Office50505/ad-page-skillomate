@@ -76,13 +76,17 @@ async function openRazorpayCheckout() {
     if (pricing.gateway !== 'razorpay') throw new Error('Razorpay checkout is unavailable. Please retry later.');
     if (!window.Razorpay) throw new Error('Razorpay could not load. Reload this page.');
     const data = await api('/api/onboarding/checkout', { paymentType, mandateConsent: true }, true);
+    const prefill = Object.fromEntries(Object.entries(data.prefill || {}).filter(([, value]) => typeof value === 'string' && value.trim()).map(([key, value]) => [key, value.trim()]));
+    const digits = String(prefill.contact || '').replace(/\D/g, '');
+    if (digits) prefill.contact = `+${digits.length === 10 ? '91' : ''}${digits}`;
     const gateway = new window.Razorpay({
       key: data.keyId,
       subscription_id: data.subscriptionId,
       name: 'Skillomate',
       description: paymentType === 'trial' ? '₹1 for 24 hours, then ₹499/month' : '₹499/month subscription',
-      prefill: data.prefill,
-      hidden: { contact: true, email: true },
+      prefill,
+      readonly: { contact: Boolean(prefill.contact) },
+      hidden: { contact: Boolean(prefill.contact), email: true },
       theme: { color: '#C58B2A' },
       handler: async result => {
         checkoutOpen = false;
