@@ -10,10 +10,9 @@ const previewProgress = $('[data-video-progress]');
 let bearer = sessionStorage.getItem('skillomateAdSession') || '', pricing, appOrigin, busy = false, checkoutOpen = false;
 let paymentType = 'trial';
 const previewSource = video?.dataset.hlsSrc;
+if (video) { video.muted = true; video.defaultMuted = true; }
 function startPreview() {
   if (!video) return;
-  video.muted = true;
-  video.defaultMuted = true;
   video.autoplay = true;
   video.play().then(() => {
     previewPlay.hidden = true;
@@ -155,7 +154,18 @@ $('[data-cancel-mandate]').onclick = async () => {
   try { await api('/api/onboarding/cancel', {}, true); status.textContent = 'Auto-renewal cancelled. Paid access remains until expiry.'; } catch (error) { status.textContent = error.message; }
   finally { busy = false; }
 };
-$('[data-mute-button]').onclick = () => { video.muted = !video.muted; $('[data-mute-button]').classList.toggle('is-unmuted', !video.muted); };
+const muteButton = $('[data-mute-button]');
+function syncPreviewSound() {
+  muteButton.classList.toggle('is-unmuted', !video.muted);
+  muteButton.setAttribute('aria-label', video.muted ? 'Unmute preview' : 'Mute preview');
+}
+video.addEventListener('volumechange', syncPreviewSound);
+$('.preview-player').style.cursor = 'pointer';
+$('.preview-player').onclick = () => {
+  video.muted = !video.muted;
+  syncPreviewSound();
+  if (video.paused) startPreview();
+};
 startPreview();
 
 $('[data-reverify]').onclick = () => { bearer = ''; sessionStorage.removeItem('skillomateAdSession'); recovery.hidden = true; enterCheckout.hidden = false; openPhone(); };
