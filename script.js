@@ -165,11 +165,13 @@ function syncPreviewSound() {
 }
 video.addEventListener('volumechange', syncPreviewSound);
 $('.preview-player').style.cursor = 'pointer';
-$('.preview-player').onclick = () => {
+document.addEventListener('click', (event) => {
+  if (busy || checkoutOpen || !modal.hidden || !(event.target instanceof Element)) return;
+  if (!event.target.closest('.preview-player') && event.target.closest('button, a, input, textarea, select, label, [role="dialog"], [role="button"], [contenteditable="true"]')) return;
   video.muted = !video.muted;
   syncPreviewSound();
   if (video.paused) startPreview();
-};
+});
 startPreview();
 
 $('[data-reverify]').onclick = () => { bearer = ''; sessionStorage.removeItem('skillomateAdSession'); recovery.hidden = true; enterCheckout.hidden = false; openPhone(); };
