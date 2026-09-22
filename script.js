@@ -9,8 +9,43 @@ const previewPlay = $('[data-preview-play]');
 const previewProgress = $('[data-video-progress]');
 let bearer = sessionStorage.getItem('skillomateAdSession') || '', pricing, appOrigin, busy = false, checkoutOpen = false;
 let paymentType = 'trial';
+let metaPixelReady = false, purchaseTracked = false, videoPlayedTracked = false, videoUnmutedTracked = false, videoHalfTracked = false;
+const offerEventParams = { content_name: 'Skillomate ₹1 Offer', content_category: 'subscription', currency: 'INR' };
+const standardPixelEvents = new Set(['PageView', 'ViewContent', 'Lead', 'CompleteRegistration', 'InitiateCheckout', 'Purchase', 'Subscribe']);
 const previewSource = video?.dataset.hlsSrc;
 if (video) { video.muted = true; video.defaultMuted = true; }
+function metaEventId(prefix) {
+  const random = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `${prefix}-${random}`;
+}
+function initMetaPixel(config = {}) {
+  const pixelId = String(config.pixelId || '').replace(/\D/g, '');
+  if (!config.enabled || !pixelId) return false;
+  if (!window.fbq) {
+    const fbq = function fbq() { fbq.callMethod ? fbq.callMethod.apply(fbq, arguments) : fbq.queue.push(arguments); };
+    fbq.push = fbq; fbq.loaded = true; fbq.version = '2.0'; fbq.queue = [];
+    window.fbq = fbq; window._fbq = fbq;
+    const script = document.createElement('script');
+    script.async = true; script.src = 'https://connect.facebook.net/en_US/fbevents.js';
+    document.head.appendChild(script);
+  }
+  window.fbq('init', pixelId);
+  metaPixelReady = true;
+  return true;
+}
+function trackPixel(eventName, params = {}, options = {}) {
+  if (!metaPixelReady || typeof window.fbq !== 'function') return;
+  const method = standardPixelEvents.has(eventName) ? 'track' : 'trackCustom';
+  window.fbq(method, eventName, { ...offerEventParams, ...params }, options);
+}
+function trackPurchase() {
+  if (purchaseTracked) return;
+  purchaseTracked = true;
+  const monthly = paymentType === 'monthly';
+  const value = monthly ? 499 : 1;
+  trackPixel('Purchase', { value, subscription_type: monthly ? 'monthly' : 'trial' }, { eventID: metaEventId('offer-purchase') });
+  trackPixel('Subscribe', { value, subscription_type: monthly ? 'monthly' : 'trial' }, { eventID: metaEventId('offer-subscribe') });
+}
 function startPreview() {
   if (!video) return;
   video.autoplay = true;
@@ -41,11 +76,16 @@ if (video && previewSource) {
   }
   video.addEventListener('loadeddata', startPreview, { once: true });
   video.addEventListener('canplay', startPreview, { once: true });
-  video.addEventListener('playing', () => { previewPlay.hidden = true; });
+  video.addEventListener('playing', () => {
+    previewPlay.hidden = true;
+    if (!videoPlayedTracked) { videoPlayedTracked = true; trackPixel('OfferVideoPlayed'); }
+  });
   video.addEventListener('pause', () => { if (!modal || modal.hidden) previewPlay.hidden = false; });
   video.addEventListener('timeupdate', () => {
     if (previewProgress && Number.isFinite(video.duration) && video.duration > 0) {
-      previewProgress.style.width = `${Math.min(100, (video.currentTime / video.duration) * 100)}%`;
+      const progress = Math.min(100, (video.currentTime / video.duration) * 100);
+      previewProgress.style.width = `${progress}%`;
+      if (progress >= 50 && !videoHalfTracked) { videoHalfTracked = true; trackPixel('OfferVideo50Percent'); }
     }
   });
 }
@@ -76,6 +116,7 @@ async function openRazorpayCheckout() {
     if (pricing.gateway !== 'razorpay') throw new Error('Razorpay checkout is unavailable. Please retry later.');
     if (!window.Razorpay) throw new Error('Razorpay could not load. Reload this page.');
     const data = await api('/api/onboarding/checkout', { paymentType, mandateConsent: true }, true);
+    trackPixel('InitiateCheckout', { value: paymentType === 'monthly' ? 499 : 1, subscription_type: paymentType }, { eventID: metaEventId('offer-checkout') });
     const prefill = Object.fromEntries(Object.entries(data.prefill || {}).filter(([, value]) => typeof value === 'string' && value.trim()).map(([key, value]) => [key, value.trim()]));
     const digits = String(prefill.contact || '').replace(/\D/g, '');
     if (digits) prefill.contact = `+${digits.length === 10 ? '91' : ''}${digits}`;
@@ -93,20 +134,22 @@ async function openRazorpayCheckout() {
         try {
           showRecovery('Verifying payment…');
           const verified = await api('/api/onboarding/verify', result, true);
-          if (verified.accessGranted) await finish();
+          if (verified.accessGranted) { trackPurchase(); await finish(); }
           else showRecovery('Payment confirmation is pending. Check payment status; do not pay again.');
         } catch (error) {
+          trackPixel('OfferPaymentPending');
           showRecovery(`${error.message} Check payment status before retrying.`);
         }
       },
       modal: {
         ondismiss: () => {
           checkoutOpen = false;
+          trackPixel('OfferCheckoutDismissed');
           showRecovery('Razorpay checkout was closed. You can reopen it or check payment status.');
         },
       },
     });
-    gateway.on('payment.failed', () => showRecovery('Payment was unsuccessful. Retry in Razorpay or check payment status.'));
+    gateway.on('payment.failed', () => { trackPixel('OfferPaymentFailed'); showRecovery('Payment was unsuccessful. Retry in Razorpay or check payment status.'); });
     checkoutOpen = true;
     gateway.open();
   } catch (error) {
@@ -126,6 +169,7 @@ async function send(resend = false) {
   authStatus.textContent = 'Sending OTP…'; otpStatus.textContent = 'Sending OTP…';
   try {
     await api(`/api/auth/${resend ? 'resend-mobile-otp' : 'send-mobile-otp'}`, { mobileNumber: `+91${phone.value}` });
+    trackPixel(resend ? 'OfferOtpResent' : 'OfferOtpSent');
     $('[data-phone-preview]').textContent = `+91 ${phone.value}`;
     phoneForm.hidden = true; otpForm.hidden = false; otpStatus.textContent = 'Enter the OTP sent to your phone.'; otp.focus();
   } catch (error) { authStatus.textContent = otpStatus.textContent = error.message; }
@@ -137,7 +181,9 @@ otpForm.onsubmit = async e => {
   e.preventDefault(); if (busy) return; busy = true; otpStatus.textContent = 'Verifying…';
   try {
     const proof = await api('/api/auth/verify-mobile-otp', { mobileNumber: `+91${phone.value}`, mobileOtp: otp.value });
+    trackPixel('Lead', { lead_type: 'phone_verified' });
     const session = await api('/api/onboarding/session', { signupToken: proof.signupToken });
+    trackPixel('CompleteRegistration', { registration_method: 'phone_otp' });
     bearer = session.token; sessionStorage.setItem('skillomateAdSession', bearer);
     busy = false;
     await openRazorpayCheckout();
@@ -147,6 +193,7 @@ otpForm.onsubmit = async e => {
 async function finish() {
   const result = await api('/api/onboarding/handoff', {}, true);
   if (!appOrigin) ({ appOrigin } = await api('/ad-config'));
+  trackPurchase();
   // One-use short-lived code in fragment, never phone/OTP/auth token in the URL.
   window.location.assign(`${appOrigin}/signup#onboarding=${encodeURIComponent(result.code)}`);
 }
@@ -162,6 +209,7 @@ const muteButton = $('[data-mute-button]');
 function syncPreviewSound() {
   muteButton.classList.toggle('is-unmuted', !video.muted);
   muteButton.setAttribute('aria-label', video.muted ? 'Unmute preview' : 'Mute preview');
+  if (!video.muted && !videoUnmutedTracked) { videoUnmutedTracked = true; trackPixel('OfferVideoUnmuted'); }
 }
 video.addEventListener('volumechange', syncPreviewSound);
 $('.preview-player').style.cursor = 'pointer';
@@ -177,3 +225,8 @@ startPreview();
 $('[data-reverify]').onclick = () => { bearer = ''; sessionStorage.removeItem('skillomateAdSession'); recovery.hidden = true; enterCheckout.hidden = false; openPhone(); };
 
 api('/ad-config').then(config => { appOrigin = config.appOrigin; $('[data-existing-login]').href = `${appOrigin}/login`; }).catch(() => {});
+api('/api/marketing-config').then(config => {
+  if (!initMetaPixel(config.metaPixel)) return;
+  trackPixel('PageView');
+  trackPixel('ViewContent', { value: 1 });
+}).catch(() => {});

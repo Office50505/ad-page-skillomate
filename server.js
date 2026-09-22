@@ -6,7 +6,7 @@ const port = Number(process.env.PORT || 5174);
 const backend = new URL(process.env.SKILLOMATE_API_ORIGIN || 'http://127.0.0.1:3000');
 const appOrigin = process.env.SKILLOMATE_APP_ORIGIN || 'http://localhost:5173';
 if (process.env.NODE_ENV === 'production' && (!process.env.SKILLOMATE_API_ORIGIN || !process.env.SKILLOMATE_APP_ORIGIN)) throw new Error('Set Skillomate API and app origins');
-const allowed = new Set(['/api/auth/send-mobile-otp', '/api/auth/resend-mobile-otp', '/api/auth/verify-mobile-otp', '/api/onboarding/config', '/api/onboarding/session', '/api/onboarding/checkout', '/api/onboarding/verify', '/api/onboarding/status', '/api/onboarding/handoff', '/api/onboarding/cancel']);
+const allowed = new Set(['/api/auth/send-mobile-otp', '/api/auth/resend-mobile-otp', '/api/auth/verify-mobile-otp', '/api/marketing-config', '/api/onboarding/config', '/api/onboarding/session', '/api/onboarding/checkout', '/api/onboarding/verify', '/api/onboarding/status', '/api/onboarding/handoff', '/api/onboarding/cancel']);
 function json(res, status, data) { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(data)); }
 http.createServer(async (req, res) => {
   try {
